@@ -135,11 +135,11 @@ def find_emoji(img_path, emoji_path):
 def main(img_path=None, emoji_path='data/basic/dataset/emoji.jpg'):
     label = pd.read_csv('data/basic/labels.csv', delimiter=';')
     i = 0
-    # for i in range(len(label)):
-    file_name = label['file_name'][i]
-    img_path = 'data/basic/dataset/overlap++.jpg'# + file_name
-    matches = find_emoji(img_path, emoji_path)[0]
-    print(f"Matches for {file_name}: {matches[0] == int(label['x_s'][i][1:-1]) and matches[1] == int(label['y_s'][i][1:-1])}")
+    for i in range(len(label)):
+        file_name = label['file_name'][i]
+        img_path = 'data/basic/dataset/' + file_name
+        matches = find_emoji(img_path, emoji_path)[0]
+        print(f"Matches for {file_name}: {matches[0] == int(label['x_s'][i][1:-1]) and matches[1] == int(label['y_s'][i][1:-1])}")
 
 if __name__ == '__main__':
     main()
