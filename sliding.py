@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import pandas as pd
+import cv2
 from matplotlib.patches import Rectangle
 from scipy.ndimage import maximum_filter
 from scipy.ndimage import generate_binary_structure
@@ -45,17 +46,25 @@ def detect_peaks(image, threshold=0.90, min_distance=10):
     
     return peaks
 
-def match_template(img, template):
+def match_template(img, template, emoji=False, viz=False):
     h, w = template.shape
     H, W = img.shape
+    if h > H or w > W:
+        scale = min(H / h, W / w)
+        new_h = int(h * scale)
+        new_w = int(w * scale)
+        template = cv2.resize(template, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        # plt.imsave('a.png', img, cmap='gray')
+        h, w = template.shape
     
-    _, ax = plt.subplots(1, figsize=(10, 10))
-    ax.imshow(img, cmap='gray')
-    search_rect = Rectangle((0, 0), w, h, linewidth=2, edgecolor='r', facecolor='none')
-    ax.add_patch(search_rect)
-    plt.title('Template Matching Process')
-    plt.ion()
-    plt.show()
+    if viz:
+        _, ax = plt.subplots(1, figsize=(10, 10))
+        ax.imshow(img, cmap='gray')
+        search_rect = Rectangle((0, 0), w, h, linewidth=2, edgecolor='r', facecolor='none')
+        ax.add_patch(search_rect)
+        plt.title('Template Matching Process')
+        plt.ion()
+        plt.show()
     
     pad_h = H - h
     pad_w = W - w
@@ -94,7 +103,7 @@ def match_template(img, template):
                 img_sum[y, x] = integral[y+h-1, x+w-1]
                 img_sum_sq[y, x] = integral_sq[y+h-1, x+w-1]
                 
-            if x % vis_step == 0 and y % vis_step == 0:
+            if viz and x % vis_step == 0 and y % vis_step == 0:
                 search_rect.set_xy((x, y))
                 plt.title(f"Searching at position ({x}, {y})")
                 plt.draw()
@@ -107,22 +116,27 @@ def match_template(img, template):
 
     mask = patch_stds > 0
     result[mask] = result[mask] / (patch_stds[mask] * t_std * n)
-    
+
+    if emoji:
+        max_val = np.max(result)
+        max_pos = np.unravel_index(np.argmax(result), result.shape)
+        return [(max_pos[1], max_pos[0]), max_val]
+
     matches = detect_peaks(result)
     
-    search_rect.remove()
     
-    for match in matches:
-        x, y = match
-        match_rect = Rectangle((x, y), w, h, 
-                            linewidth=3, edgecolor='g', facecolor='none')
-        ax.add_patch(match_rect)
-        
-    plt.title(f"Found {len(matches)} matches")
-        
-    plt.draw()
-    plt.pause(2)
-    plt.ioff()
+    if viz:    
+        search_rect.remove()
+        for match in matches:
+            x, y = match
+            match_rect = Rectangle((x, y), w, h, 
+                                linewidth=3, edgecolor='g', facecolor='none')
+            ax.add_patch(match_rect)
+        plt.title(f"Found {len(matches)} matches")
+
+        plt.draw()
+        plt.pause(2)
+        plt.ioff()
     
     return matches
 
